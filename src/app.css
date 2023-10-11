@@ -1,0 +1,45 @@
+html, body, #root {
+  height: 100%;
+  margin: 0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.alex {
+  border-radius: 5px;
+  font-size: 20px;
+  -webkit-text-stroke-width: 0.5px;
+  padding: 2px;
+}
+.kiril {
+  border-radius: 5px;
+  font-size: 20px;
+  -webkit-text-stroke-width: 0.5px;
+  padding: 2px;
+}
+.kyla {
+  border-radius: 5px;
+  font-size: 20px;
+  -webkit-text-stroke-width: 0.5px;
+  padding: 2px;
+}
+
+.uploader-container {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  align-items: center;
+}
+
+.uploader-container label {
+  border: 3px dotted;
+  height: 75px;
+  padding: 0 2rem;
+  width: 100%;
+}
+
+.uploader-container svg {
+  padding-right: 5px;
+}
