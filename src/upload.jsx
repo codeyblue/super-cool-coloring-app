@@ -2,6 +2,7 @@ import React from 'react';
 import { useSignal, batch, computed } from '@preact/signals-react';
 
 import { FileUploader } from 'react-drag-drop-files';
+import { ProcessImage } from './scripts/processImage.js';
 import { useAppState } from './state.jsx';
 
 const loadUrl = (img, url) => {
@@ -20,6 +21,10 @@ export const Upload = () => {
   const previewCanvas = useSignal(document.createElement('canvas'));
   const previewCtx = computed(() => previewCanvas.value.getContext('2d'));
   const previewImageData = useSignal(null);
+
+  const outlineCanvas = useSignal(document.createElement('canvas'));
+  const outlineCtx = computed(() => outlineCanvas.value.getContext('2d'));
+  const outlineImageData = useSignal(null);
 
   const onFileChange = file => {
     const img = new Image();
@@ -45,8 +50,10 @@ export const Upload = () => {
       const width = naturalWidth * scale;
       const height = naturalHeight * scale;
       const ctx = previewCtx.value;
+      const octx = outlineCtx.value;
+      const outline = ProcessImage.getOutline(img, width, height);
 
-      console.log({ width, height, ctx });
+      console.log({ width, height, ctx, octx });
 
       batch(() => {
         // save this to use later
@@ -54,11 +61,16 @@ export const Upload = () => {
 
         previewCanvas.value.width = width;
         previewCanvas.value.height = height;
+        outlineCanvas.value.width = width;
+        outlineCanvas.value.height = height;
 
         ctx.drawImage(img, 0, 0, width, height);
+        octx.putImageData(outline, 0, 0);
         previewImageData.value = ctx.getImageData(0, 0, width, height);
+        outlineImageData.value = outline;
       });
       preview.appendChild(previewCanvas.value);
+      preview.appendChild(outlineCanvas.value);
     });
   };
 
@@ -122,7 +134,7 @@ export const Upload = () => {
             <div id='preview' />
             {
               previewImageData.value &&
-              <button onClick={submit}>Start</button>
+                <button onClick={submit}>Start</button>
             }
         </div>
         <div id="footer" pad="large">
