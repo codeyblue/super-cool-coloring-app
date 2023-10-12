@@ -30,7 +30,7 @@ export const Upload = () => {
 
   const loadDemoImage = async () => {
     const img = new Image();
-    const response = await fetch('./demoImage.jpg');
+    const response = await fetch('./demo-image.jpg');
     loadPreview(img, response.url);
   };
 
