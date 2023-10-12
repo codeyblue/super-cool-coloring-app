@@ -3,35 +3,14 @@ import { Box, Button } from 'grommet';
 import Color from 'color';
 import { FormRefresh } from 'grommet-icons';
 
-import { useDB } from './state-db.jsx'
-import { useAppState } from './state.jsx';
-import { StateCanvas, useActiveLayer } from './state-canvas.jsx';
+import { useAppState, useDrawingContext } from './state.jsx';
+import { Canvas } from './state-canvas.jsx';
 
 export const Draw = () => {
   const {
     canvasTransform,
-    originalImageData,
-    route,
-    batch
+    resetApp,
   } = useAppState();
-
-  const db = useDB();
-
-  const canvas = useActiveLayer();
-
-  useEffect(() => {
-    const ctx = canvas.getContext('2d');
-    ctx.putImageData(originalImageData.value, 0, 0);
-  }, [/* execute once */]);
-
-  const clearImageData = () => {
-    db.reset('original-image-data');
-
-    batch(() => {
-      originalImageData.value = undefined;
-      route.value = 'upload';
-    });
-  };
 
   return (
     <div style={{
@@ -52,7 +31,7 @@ export const Draw = () => {
         background: '#EAE8FF',
         borderRadius: '0 0 10px 0'
       }}>
-        <StateCanvas />
+        <Canvas />
       </div>
 
       <div style={{
@@ -61,7 +40,7 @@ export const Draw = () => {
         justifyContent: 'space-between'
       }}>
         <Box id="file-controls">
-          <Button onClick={clearImageData} icon={<FormRefresh />} />
+          <Button onClick={resetApp} icon={<FormRefresh />} />
         </Box>
       </div>
     </div>

@@ -6,7 +6,7 @@ import { useAppState } from './state.jsx';
 // single canvas as an unmanaged element into
 // the DOM
 
-export const StateCanvas = (props = {}) => {
+export const Canvas = (props = {}) => {
   const { layers, drawingMode, effect } = useAppState();
   const containerRef = createRef();
 
@@ -37,9 +37,4 @@ export const StateCanvas = (props = {}) => {
       overflow: 'hidden'
     }}
   />
-};
-
-export const useActiveLayer = () => {
-  const { activeLayer, layers } = useAppState();
-  return layers.value[activeLayer.value];
 };

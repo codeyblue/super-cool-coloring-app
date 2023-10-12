@@ -51,6 +51,16 @@ export const withAppState = Component => ({ children, ...props }) => {
 
   const db = useDB();
 
+  const resetApp = () => {
+    db.reset(dbKeys.originalImageData);
+
+    batch(() => {
+      originalImageData.value = undefined;
+      route.value = 'upload';
+      activeLayer.value = 0;
+    });
+  };
+
   // this is a private copy that will be used for the database only
   const originalImageDataFastCopy = computed(() => {
     const imageData = originalImageData.value;
@@ -155,6 +165,14 @@ export const withAppState = Component => ({ children, ...props }) => {
       canvas.width = width;
       canvas.height = height;
     }
+
+    const active = activeLayer.value;
+
+    if (active >= 0) {
+      const canvas = layers.value[active];
+      const ctx = canvas.getContext('2d');
+      ctx.putImageData(imageData, 0, 0);
+    }
   });
 
   // apply canvas transform when the single signal value is changed
@@ -173,6 +191,7 @@ export const withAppState = Component => ({ children, ...props }) => {
       canvasTransform,
       originalImageData,
       route,
+      resetApp,
       // helper methods
       batch,
       effect
@@ -183,3 +202,13 @@ export const withAppState = Component => ({ children, ...props }) => {
 };
 
 export const useAppState = () => useContext(State);
+
+export const useActiveLayer = () => {
+  const { activeLayer, layers } = useAppState();
+  return layers.value[activeLayer.value];
+};
+
+export const useDrawingContext = () => {
+  const canvas = useActiveLayer();
+  return canvas.getContext('2d');
+};
