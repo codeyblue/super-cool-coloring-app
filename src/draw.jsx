@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Box, Button } from 'grommet';
 import Color from 'color';
 import { FormRefresh } from 'grommet-icons';
