@@ -26,7 +26,7 @@ export const Canvas = (props = {}) => {
         containerRef.current.appendChild(canvas);
       }
     }
-  }, containerRef.current);
+  }, [containerRef.current]);
 
   return <div
     ref={containerRef}

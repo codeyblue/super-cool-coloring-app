@@ -8,14 +8,14 @@ import { Canvas } from './state-canvas.jsx';
 
 export const Draw = () => {
   const {
+    activeContext,
+    activeLayer,
     canvasTransform,
     resetApp,
   } = useAppState();
 
   const viewportRef = createRef();
-
-  const layer = useActiveLayer();
-  const { width, height } = layer || {};
+  const { width, height } = activeLayer.peek() || {};
 
   useEffect(() => {
     if (width && height && viewportRef.current) {
@@ -25,9 +25,40 @@ export const Draw = () => {
       const x = (viewportRect.width - (width * scale)) / 2;
       const y = (viewportRect.height - (height * scale)) / 2;
 
-      canvasTransform.value = `matrix(${scale}, 0, 0, ${scale}, ${x}, ${y})`;
+      canvasTransform.value = new DOMMatrix([scale, 0, 0, scale, x, y]);
     }
   }, [width, height, viewportRef.current]);
+
+  const getCanvasPoint = ev => {
+    const { offsetX, offsetY, pointerType: type, pressure = 0.5 } = ev;
+    const point = new DOMPoint(offsetX, offsetY);
+    const matrix = DOMMatrix.fromMatrix(canvasTransform.peek()).invertSelf();
+    const { x, y } = point.matrixTransform(matrix);
+
+    return { x, y, pressure, type };
+  };
+
+  const onDown = ev => {
+    // TODO passive?
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+
+    // const { x, y, pressure, type} = getCanvasPoint(ev.nativeEvent);
+  };
+
+  const onMove = ev => {
+    const { x, y, pressure, type} = getCanvasPoint(ev);
+
+    const ctx = activeContext.peek();
+    ctx.beginPath();
+    ctx.arc(x, y, 10 * pressure, 0, 360);
+    ctx.fill();
+  };
+
+  const onUp = ev => {
+    window.removeEventListener('pointermove', onMove);
+    window.removeEventListener('pointerup', onUp);
+  };
 
   return (
     <div style={{
@@ -48,7 +79,7 @@ export const Draw = () => {
         background: '#EAE8FF',
         borderRadius: '0 0 10px 0'
       }}>
-        <Canvas />
+        <Canvas onPointerDown={onDown} />
       </div>
 
       <div style={{
