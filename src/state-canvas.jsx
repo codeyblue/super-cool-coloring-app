@@ -7,7 +7,7 @@ import { useAppState } from './state.jsx';
 // the DOM
 
 export const Canvas = (props = {}) => {
-  const { layers, drawingMode, effect } = useAppState();
+  const { layers } = useAppState();
   const containerRef = createRef();
 
   useLayoutEffect(() => {
