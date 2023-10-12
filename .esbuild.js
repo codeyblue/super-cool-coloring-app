@@ -12,6 +12,7 @@ const prod = process.argv.includes('--prod');
 const dev = process.argv.includes('--dev');
 const watch = dev || process.argv.includes('--watch');
 const noCache = dev || process.argv.includes('--no-cache');
+const verbose = process.argv.includes('--verbose');
 
 const buildApp = async () => {
   const context = await esbuild.context({
@@ -20,7 +21,7 @@ const buildApp = async () => {
     entryPoints: ['src/app.jsx'],
     bundle: true,
     outfile: path.resolve(OUTDIR, 'app.js'),
-    logLevel: 'info',
+    logLevel: verbose ? 'info' : 'error',
     treeShaking: true,
     metafile: true
   });
@@ -50,7 +51,7 @@ const buildStatic = async () => {
       loader: {
         [path.extname(source)]: 'copy'
       },
-      logLevel: 'info'
+      logLevel: verbose ? 'info' : 'error',
     });
 
     if (watch) {
