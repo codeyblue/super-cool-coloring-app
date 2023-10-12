@@ -120,7 +120,10 @@ export const Upload = () => {
               <FileUploader handleChange={onFileChange} name="file" types={['JPG', 'JPEG', 'PNG']} />
             </div>
             <div id='preview' />
-            <button onClick={submit}>Start</button>
+            {
+              previewImageData.value &&
+              <button onClick={submit}>Start</button>
+            }
         </div>
         <div id="footer" pad="large">
           <p>Too lazy to upload an image yourself?</p>
