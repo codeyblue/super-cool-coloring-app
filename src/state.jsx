@@ -10,14 +10,56 @@ const dbKeys = {
   originalImageData: 'original-image-data'
 };
 
+// TODO do we need to debounce saves?
+export const dbSignal = (key, initialValue, { load, save } = {}) => {
+  const db = useDB();
+  const sig = signal(initialValue);
+
+  // attempt to load value from the database once
+  useEffect(() => {
+    if (load) {
+      return void load();
+    }
+
+    db.get(key).then(value => {
+      sig.value = value;
+    }).catch(err => {
+      console.log(`failed to load "${key}" data:`, err);
+    });
+  }, []);
+
+  // save whenever the value changes
+  effect(() => {
+    if (save) {
+      return void save();
+    }
+
+    db.set(key, sig.value).catch(err => {
+      console.log(`failed to persist "${key}" data:`, err);
+    });
+  });
+
+  return sig;
+};
+
 export const withAppState = Component => ({ children, ...props }) => {
   const route = signal('loading');
+  const layers = signal([]);
+  const activeLayer = dbSignal('active-layer', 0);
   const originalImageData = signal(undefined);
-  const canvas = signal(document.createElement('canvas'));
-  const originalCanvas = signal(document.createElement('canvas'));
   const canvasTransform = signal('');
 
   const db = useDB();
+
+  const resetApp = () => {
+    db.reset(dbKeys.originalImageData);
+
+    batch(() => {
+      originalImageData.value = undefined;
+      route.value = 'upload';
+      activeLayer.value = 0;
+    });
+  };
 
   // this is a private copy that will be used for the database only
   const originalImageDataFastCopy = computed(() => {
@@ -100,6 +142,15 @@ export const withAppState = Component => ({ children, ...props }) => {
     }
   });
 
+  effect(() => {
+    if (layers.value.length === 0) {
+      batch(() => {
+        layers.value = [document.createElement('canvas')];
+        activeLayer.value = 0;
+      });
+    }
+  })
+
   // keep all canvases in sync with the original image data size
   effect(() => {
     const imageData = originalImageData.value;
@@ -110,29 +161,40 @@ export const withAppState = Component => ({ children, ...props }) => {
 
     const { width, height } = imageData;
 
-    canvas.value.width = width;
-    canvas.value.height = height;
+    for (const canvas of layers.value) {
+      canvas.width = width;
+      canvas.height = height;
+    }
 
-    originalCanvas.value.width = width;
-    originalCanvas.value.height = height;
+    const active = activeLayer.value;
+
+    if (active >= 0) {
+      const canvas = layers.value[active];
+      const ctx = canvas.getContext('2d');
+      ctx.putImageData(imageData, 0, 0);
+    }
   });
 
   // apply canvas transform when the single signal value is changed
   effect(() => {
     const transform = canvasTransform.value;
-    canvas.value.style.transform = transform;
-    originalCanvas.value.style.transform = transform;
+
+    for (const canvas of layers.value) {
+      canvas.style.transform = transform;
+    }
   });
 
   return (
     <State.Provider value={{
-      canvas,
-      originalCanvas,
+      activeLayer,
+      layers,
       canvasTransform,
       originalImageData,
       route,
+      resetApp,
       // helper methods
-      batch
+      batch,
+      effect
     }}>
       <Component {...props}>{children}</Component>
     </State.Provider>
@@ -140,3 +202,13 @@ export const withAppState = Component => ({ children, ...props }) => {
 };
 
 export const useAppState = () => useContext(State);
+
+export const useActiveLayer = () => {
+  const { activeLayer, layers } = useAppState();
+  return layers.value[activeLayer.value];
+};
+
+export const useDrawingContext = () => {
+  const canvas = useActiveLayer();
+  return canvas.getContext('2d');
+};
