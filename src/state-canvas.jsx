@@ -6,23 +6,24 @@ import { useAppState } from './state.jsx';
 // single canvas as an unmanaged element into
 // the DOM
 
-export const StateCanvas = (props = {}) => {
-  const { canvas, originalCanvas, drawingMode } = useAppState();
+export const Canvas = (props = {}) => {
+  const { layers } = useAppState();
   const containerRef = createRef();
 
   useLayoutEffect(() => {
     if (containerRef && containerRef.current) {
-      const original = originalCanvas.peek();
+      const canvases = layers.peek();
 
-      Object.assign(original.style, {
-        position: 'absolute',
-        top: '0',
-        left: '0',
-        pointerEvents: 'none'
-      });
+      for (const canvas of canvases) {
+        Object.assign(canvas.style, {
+          position: 'absolute',
+          top: '0',
+          left: '0',
+          pointerEvents: 'none'
+        });
 
-      containerRef.current.appendChild(canvas.peek());
-      containerRef.current.appendChild(original);
+        containerRef.current.appendChild(canvas);
+      }
     }
   }, containerRef.current);
 
