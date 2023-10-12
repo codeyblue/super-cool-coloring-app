@@ -1,8 +1,9 @@
 const path = require('path');
 const { promises: fs } = require('fs');
 const http = require('http');
+const { networkInterfaces } = require('os');
 
-const { build } = require('esbuild');
+const esbuild = require('esbuild');
 const handler = require('serve-handler');
 
 const OUTDIR = path.resolve(__dirname, 'build');
@@ -12,25 +13,62 @@ const dev = process.argv.includes('--dev');
 const watch = dev || process.argv.includes('--watch');
 const noCache = dev || process.argv.includes('--no-cache');
 
-const config = prod ? {
-  minify: true
-} : {
-  watch,
-  sourcemap: 'inline'
-};
-
-(async () => {
-  await build({
-    ...config,
+const buildApp = async () => {
+  const context = await esbuild.context({
+    minify: !!prod,
+    sourcemap: prod ? false : 'inline',
     entryPoints: ['src/app.jsx'],
     bundle: true,
     outfile: path.resolve(OUTDIR, 'app.js'),
-    logLevel: 'info'
+    logLevel: 'info',
+    treeShaking: true,
+    metafile: true
   });
 
-  // maybe do something else for this one?
-  await fs.writeFile(path.resolve(OUTDIR, 'index.html'), await fs.readFile('src/index.html'));
-  await fs.writeFile(path.resolve(OUTDIR, 'demoImage.jpg'), await fs.readFile('test/images/demo-image.jpg'));
+  const { metafile } = await context.rebuild();
+  await fs.writeFile(path.resolve(OUTDIR, 'metafile'), JSON.stringify(metafile, null, 2));
+
+  if (watch) {
+    await context.watch();
+  } else {
+    await context.rebuild();
+    await context.dispose();
+  }
+};
+
+const buildStatic = async () => {
+  const files = [
+    { source: 'src/index.html', destination: path.resolve(OUTDIR, 'index.html') },
+    { source: 'test/images/demo-image.jpg', destination: path.resolve(OUTDIR, 'demo-image.jpg') }
+  ];
+
+  for (const { source, destination } of files) {
+    const ctx = await esbuild.context({
+      entryPoints: [source],
+      outfile: destination,
+      bundle: false,
+      loader: {
+        [path.extname(source)]: 'copy'
+      },
+      logLevel: 'info'
+    });
+
+    if (watch) {
+      await ctx.watch();
+    } else {
+      await ctx.rebuild();
+      await ctx.dispose();
+    }
+  }
+};
+
+(async () => {
+  await fs.rm(OUTDIR, {
+    force: true,
+    recursive: true
+  });
+  await buildApp();
+  await buildStatic();
 
   if (dev) {
     const noCacheSettings = {
@@ -53,7 +91,14 @@ const config = prod ? {
 
     await new Promise(r => server.listen(port, () => r()));
 
-    console.log(`app running at http://localhost:${port}`);
+    console.log([
+      'app running at:',
+      `  http://localhost:${port}`,
+      ...Object.values(networkInterfaces())
+        .reduce((memo, value) => [...memo, ...value], [])
+        .filter(value => value.family === 'IPv4')
+        .map(({ address }) => `  http://${address}:${port}`)
+    ].join('\n'));
   }
 })().catch((err) => {
   console.error(err);
