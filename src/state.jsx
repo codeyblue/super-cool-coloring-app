@@ -10,10 +10,42 @@ const dbKeys = {
   originalImageData: 'original-image-data'
 };
 
+// TODO do we need to debounce saves?
+export const dbSignal = (key, initialValue, { load, save } = {}) => {
+  const db = useDB();
+  const sig = signal(initialValue);
+
+  // attempt to load value from the database once
+  useEffect(() => {
+    if (load) {
+      return void load();
+    }
+
+    db.get(key).then(value => {
+      sig.value = value;
+    }).catch(err => {
+      console.log(`failed to load "${key}" data:`, err);
+    });
+  }, []);
+
+  // save whenever the value changes
+  effect(() => {
+    if (save) {
+      return void save();
+    }
+
+    db.set(key, sig.value).catch(err => {
+      console.log(`failed to persist "${key}" data:`, err);
+    });
+  });
+
+  return sig;
+};
+
 export const withAppState = Component => ({ children, ...props }) => {
   const route = signal('loading');
   const layers = signal([]);
-  const activeLayer = signal(0);
+  const activeLayer = dbSignal('active-layer', 0);
   const originalImageData = signal(undefined);
   const canvasTransform = signal('');
 
