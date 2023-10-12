@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useEffect, createRef } from 'react';
 import { Box, Button } from 'grommet';
 import Color from 'color';
 import { FormRefresh } from 'grommet-icons';
 
-import { useAppState, useDrawingContext } from './state.jsx';
+import { useAppState, useActiveLayer, useDrawingContext } from './state.jsx';
 import { Canvas } from './state-canvas.jsx';
 
 export const Draw = () => {
@@ -11,6 +11,23 @@ export const Draw = () => {
     canvasTransform,
     resetApp,
   } = useAppState();
+
+  const viewportRef = createRef();
+
+  const layer = useActiveLayer();
+  const { width, height } = layer || {};
+
+  useEffect(() => {
+    if (width && height && viewportRef.current) {
+      const padding = 10;
+      const viewportRect = viewportRef.current.getBoundingClientRect();
+      const scale = Math.min(1, (viewportRect.width - padding - padding) / width, (viewportRect.height - padding - padding) / height);
+      const x = (viewportRect.width - (width * scale)) / 2;
+      const y = (viewportRect.height - (height * scale)) / 2;
+
+      canvasTransform.value = `matrix(${scale}, 0, 0, ${scale}, ${x}, ${y})`;
+    }
+  }, [width, height, viewportRef.current]);
 
   return (
     <div style={{
@@ -24,7 +41,7 @@ export const Draw = () => {
       gridTemplateRows: 'calc(100% - var(--bottombar-size)) var(--bottombar-size)',
       background: '#ffffff'
     }}>
-      <div style={{
+      <div ref={viewportRef} style={{
         overflow: 'hidden',
         borderRight: `1px solid ${Color('#EAE8FF').darken(.1).hex()}`,
         borderBottom: `1px solid ${Color('#EAE8FF').darken(.1).hex()}`,
