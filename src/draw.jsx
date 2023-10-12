@@ -1,14 +1,14 @@
 import React, { useEffect } from 'react';
-import { useSignal } from '@preact/signals-react';
+import { Box, Button } from 'grommet';
+import Color from 'color';
+import { FormRefresh } from 'grommet-icons';
 
 import { useDB } from './state-db.jsx'
 import { useAppState } from './state.jsx';
-import { StateCanvas } from './state-canvas.jsx';
+import { StateCanvas, useActiveLayer } from './state-canvas.jsx';
 
 export const Draw = () => {
   const {
-    canvas: canvasSignal,
-    originalCanvas: originalCanvasSignal,
     canvasTransform,
     originalImageData,
     route,
@@ -17,12 +17,11 @@ export const Draw = () => {
 
   const db = useDB();
 
-  const canvas = canvasSignal.value;
+  const canvas = useActiveLayer();
 
   useEffect(() => {
     const ctx = canvas.getContext('2d');
-
-    originalCanvasSignal.peek().getContext('2d').putImageData(originalImageData.value, 0, 0);
+    ctx.putImageData(originalImageData.value, 0, 0);
   }, [/* execute once */]);
 
   const clearImageData = () => {

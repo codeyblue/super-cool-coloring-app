@@ -26,7 +26,7 @@ export const withDB = Component => ({ children, ...props }) => {
     });
   });
 
-  const { update, getOneByKey, deleteAll } = useIndexedDBStore('keystore');
+  const { update, getOneByKey, deleteAll, openCursor } = useIndexedDBStore('keystore');
 
   const set = (name, value) => update({ name, value });
   const get = name => getOneByKey('name', name).then(result => {
@@ -38,11 +38,29 @@ export const withDB = Component => ({ children, ...props }) => {
   });
   const reset = () => deleteAll();
 
+  const find = (matcher = () => false) => new Promise((resolve, reject) => {
+    const result = [];
+
+    openCursor(e => {
+      const c = e.target.result;
+
+      if (c) {
+        if (matcher(c.value)) {
+          result.push(c.value);
+        }
+
+        c.continue();
+      } else {
+        resolve(result);
+      }
+    });
+  });
   return (
     <DB.Provider value={{
       set,
       get,
-      reset
+      reset,
+      find
     }}>
       <Component {...props}>{children}</Component>
     </DB.Provider>

@@ -12,9 +12,9 @@ const dbKeys = {
 
 export const withAppState = Component => ({ children, ...props }) => {
   const route = signal('loading');
+  const layers = signal([]);
+  const activeLayer = signal(0);
   const originalImageData = signal(undefined);
-  const canvas = signal(document.createElement('canvas'));
-  const originalCanvas = signal(document.createElement('canvas'));
   const canvasTransform = signal('');
 
   const db = useDB();
@@ -100,6 +100,15 @@ export const withAppState = Component => ({ children, ...props }) => {
     }
   });
 
+  effect(() => {
+    if (layers.value.length === 0) {
+      batch(() => {
+        layers.value = [document.createElement('canvas')];
+        activeLayer.value = 0;
+      });
+    }
+  })
+
   // keep all canvases in sync with the original image data size
   effect(() => {
     const imageData = originalImageData.value;
@@ -110,29 +119,31 @@ export const withAppState = Component => ({ children, ...props }) => {
 
     const { width, height } = imageData;
 
-    canvas.value.width = width;
-    canvas.value.height = height;
-
-    originalCanvas.value.width = width;
-    originalCanvas.value.height = height;
+    for (const canvas of layers.value) {
+      canvas.width = width;
+      canvas.height = height;
+    }
   });
 
   // apply canvas transform when the single signal value is changed
   effect(() => {
     const transform = canvasTransform.value;
-    canvas.value.style.transform = transform;
-    originalCanvas.value.style.transform = transform;
+
+    for (const canvas of layers.value) {
+      canvas.style.transform = transform;
+    }
   });
 
   return (
     <State.Provider value={{
-      canvas,
-      originalCanvas,
+      activeLayer,
+      layers,
       canvasTransform,
       originalImageData,
       route,
       // helper methods
-      batch
+      batch,
+      effect
     }}>
       <Component {...props}>{children}</Component>
     </State.Provider>
