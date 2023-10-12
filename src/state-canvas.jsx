@@ -19,6 +19,7 @@ export const Canvas = (props = {}) => {
           position: 'absolute',
           top: '0',
           left: '0',
+          transformOrigin: '0 0',
           pointerEvents: 'none'
         });
 
