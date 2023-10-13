@@ -87,10 +87,11 @@ export const Upload = () => {
     previewCanvas.value.height = height;
 
     const ctx = previewCtx.value;
+    const outline = ProcessImage.getOutline(originalImage.value, width, height);
 
-    ctx.drawImage(originalImage.value, 0, 0, width, height);
-
-    // if we are in lineart mode, generate the outline for the large image
+    // todo keep both the original image data and the outline. for now, overriding with the outline
+    // ctx.drawImage(originalImage.value, 0, 0, width, height);
+    ctx.putImageData(outline, 0, 0);
 
     batchAppState(() => {
       originalImageData.value = ctx.getImageData(0, 0, width, height);
