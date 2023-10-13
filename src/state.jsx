@@ -45,9 +45,16 @@ export const dbSignal = (key, initialValue, { load, save } = {}) => {
 export const withAppState = Component => ({ children, ...props }) => {
   const route = signal('loading');
   const layers = signal([]);
-  const activeLayer = dbSignal('active-layer', 0);
+  const activeLayerIndex = dbSignal('active-layer', 0);
   const originalImageData = signal(undefined);
-  const canvasTransform = signal('');
+  const canvasTransform = signal(new DOMMatrix());
+
+  const activeLayer = computed(() => {
+    return layers.value[activeLayerIndex.value];
+  });
+  const activeContext = computed(() => {
+    return activeLayer.value.getContext('2d');
+  });
 
   const db = useDB();
 
@@ -57,7 +64,7 @@ export const withAppState = Component => ({ children, ...props }) => {
     batch(() => {
       originalImageData.value = undefined;
       route.value = 'upload';
-      activeLayer.value = 0;
+      activeLayerIndex.value = 0;
     });
   };
 
@@ -146,7 +153,7 @@ export const withAppState = Component => ({ children, ...props }) => {
     if (layers.value.length === 0) {
       batch(() => {
         layers.value = [document.createElement('canvas')];
-        activeLayer.value = 0;
+        activeLayerIndex.value = 0;
       });
     }
   })
@@ -166,7 +173,7 @@ export const withAppState = Component => ({ children, ...props }) => {
       canvas.height = height;
     }
 
-    const active = activeLayer.value;
+    const active = activeLayerIndex.value;
 
     if (active >= 0) {
       const canvas = layers.value[active];
@@ -177,7 +184,8 @@ export const withAppState = Component => ({ children, ...props }) => {
 
   // apply canvas transform when the single signal value is changed
   effect(() => {
-    const transform = canvasTransform.value;
+    const matrix = canvasTransform.value;
+    const transform = `matrix(${matrix.a}, ${matrix.b}, ${matrix.c}, ${matrix.d}, ${matrix.e}, ${matrix.f})`;
 
     for (const canvas of layers.value) {
       canvas.style.transform = transform;
@@ -186,7 +194,9 @@ export const withAppState = Component => ({ children, ...props }) => {
 
   return (
     <State.Provider value={{
+      activeContext,
       activeLayer,
+      activeLayerIndex,
       layers,
       canvasTransform,
       originalImageData,
@@ -202,13 +212,3 @@ export const withAppState = Component => ({ children, ...props }) => {
 };
 
 export const useAppState = () => useContext(State);
-
-export const useActiveLayer = () => {
-  const { activeLayer, layers } = useAppState();
-  return layers.value[activeLayer.value];
-};
-
-export const useDrawingContext = () => {
-  const canvas = useActiveLayer();
-  return canvas.getContext('2d');
-};

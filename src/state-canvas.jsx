@@ -19,13 +19,14 @@ export const Canvas = (props = {}) => {
           position: 'absolute',
           top: '0',
           left: '0',
+          transformOrigin: '0 0',
           pointerEvents: 'none'
         });
 
         containerRef.current.appendChild(canvas);
       }
     }
-  }, containerRef.current);
+  }, [containerRef.current]);
 
   return <div
     ref={containerRef}

@@ -25,7 +25,7 @@
     "url": "https://github.com/codeyblue/super-cool-coloring-app"
   },
   "devDependencies": {
-    "esbuild": "^0.16.4",
+    "esbuild": "^0.19.4",
     "serve-handler": "^6.1.5"
   }
 }
