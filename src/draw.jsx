@@ -3,8 +3,10 @@ import { Box, Button } from 'grommet';
 import Color from 'color';
 import { FormRefresh } from 'grommet-icons';
 
-import { useAppState, useActiveLayer, useDrawingContext } from './state.jsx';
+import { useAppState } from './state.jsx';
 import { Canvas } from './state-canvas.jsx';
+
+import { draw as pen } from './brushes/pen.js';
 
 export const Draw = () => {
   const {
@@ -38,7 +40,14 @@ export const Draw = () => {
     return { x, y, pressure, type };
   };
 
+  const cancelEvent = ev => {
+    ev.preventDefault();
+    ev.stopPropagation();
+  };
+
   const onDown = ev => {
+    cancelEvent(ev);
+
     // TODO passive?
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
@@ -47,12 +56,13 @@ export const Draw = () => {
   };
 
   const onMove = ev => {
+    cancelEvent(ev);
+
     const { x, y, pressure, type} = getCanvasPoint(ev);
 
     const ctx = activeContext.peek();
-    ctx.beginPath();
-    ctx.arc(x, y, 10 * pressure, 0, 360);
-    ctx.fill();
+
+    pen({ ctx, x, y, pressure, size: 10, color: '#ff0000' });
   };
 
   const onUp = ev => {
